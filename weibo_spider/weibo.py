@@ -7,9 +7,11 @@ class Weibo:
         self.article_url = ''
 
         self.original_pictures = []
+        self.uploaded_pictures = []
         self.retweet_pictures = None
         self.original = None
         self.video_url = ''
+        self.uploaded_video_url = ''
 
         self.publish_place = ''
         self.publish_time = ''

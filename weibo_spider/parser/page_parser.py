@@ -305,12 +305,14 @@ class PageParser(Parser):
                 picture_urls = self.get_picture_urls(info, is_original)
                 weibo.original_pictures = picture_urls[
                     'original_pictures']  # 原创图片url
+                weibo.uploaded_pictures = []  # 已上传CDN的微博图片url
                 if not self.filter:
                     weibo.retweet_pictures = picture_urls[
                         'retweet_pictures']  # 转发图片url
                     weibo.original = is_original  # 是否原创微博
                 weibo.video_url = self.get_video_url(info,
                                                      is_original)  # 微博视频url
+                weibo.uploaded_video_url = ''  # 已上传CDN的微博视频url
                 weibo.publish_place = self.get_publish_place(info)  # 微博发布位置
                 weibo.publish_time = self.get_publish_time(info)  # 微博发布时间
                 weibo.publish_tool = self.get_publish_tool(info)  # 微博发布工具

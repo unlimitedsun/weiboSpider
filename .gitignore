@@ -8,3 +8,7 @@ dist/
 
 weibo/
 config.json
+.idea/
+output/
+all.log
+error.log
