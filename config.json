@@ -1,0 +1,12 @@
+{
+    "user_id_list": ["6728786240"],
+    "filter": 1,
+    "since_date": "2019-01-01",
+    "end_date": "now",
+    "random_wait_pages": [1, 5],
+    "random_wait_seconds": [6, 10],
+    "write_mode": ["json"],
+    "pic_download": 1,
+    "video_download": 1,
+    "cookie": "_T_WM=34460589263; WEIBOCN_FROM=1110006030; SCF=AnTTXxb9WtihPc9gsOdwItSEmS-At6GdP3SvVBWO8G1bDkkYCrlfjGEpuw5u6tKUhedsbkGa2FWoj1TRy7nuEaM.; SUB=_2A25yGvE1DeRhGeRP4lAU8CbIzj2IHXVR5J99rDV6PUNbktANLUvBkW1NU-qeK0-vGpyhcFlBinY2Ts6OeXTbn8pM; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9WhscnJyLxfhbCV60GNRAW4x5JpX5KMhUgL.Fozp1KzfehnXSK22dJLoIEMLxKML1heLB-BLxKqLBo-LB-2LxK-L1h2L1hMLxKqL1-eL1-qpeoMt; SUHB=0h14sQ6lu3HbBu; SSOLoginState=1595834725; ALF=1598426725; MLOGIN=1; M_WEIBOCN_PARAMS=oid%3D4521486175782247%26luicode%3D20000061%26lfid%3D4521486175782247; XSRF-TOKEN=6c9d2c"
+}
