@@ -320,6 +320,7 @@ class PageParser(Parser):
                 weibo.up_num = footer['up_num']  # 微博点赞数
                 weibo.retweet_num = footer['retweet_num']  # 转发数
                 weibo.comment_num = footer['comment_num']  # 评论数
+                weibo.comments = self.get_weibo_comments(info, is_original)  # 微博评论
             else:
                 weibo = None
                 logger.info(u'正在过滤转发微博')
@@ -364,3 +365,13 @@ class PageParser(Parser):
         except Exception as e:
             logger.exception(e)
             return u'无'
+
+    def get_weibo_comments(self, info, is_original):
+        """获取微博评论"""
+        try:
+            weibo_id = info.xpath('@id')[0][2:]
+
+            weibo_comments = CommentParser(self.cookie, weibo_id).get_comments(is_original)
+            return weibo_comments
+        except Exception as e:
+            logger.exception(e)

@@ -21,6 +21,8 @@ class Weibo:
         self.retweet_num = 0
         self.comment_num = 0
 
+        self.comments = []
+
     def __str__(self):
         """打印一条微博"""
         result = self.content + '\n'

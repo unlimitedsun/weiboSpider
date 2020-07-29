@@ -1,7 +1,7 @@
 {
     "user_id_list": ["6728786240"],
     "filter": 1,
-    "since_date": "2020-01-01",
+    "since_date": "2020-07-23",
     "end_date": "now",
     "random_wait_pages": [1, 5],
     "random_wait_seconds": [6, 10],
