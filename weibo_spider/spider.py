@@ -125,19 +125,23 @@ class Spider:
                     self.user_config['user_uri']).get_page_num()  # 获取微博总页数
                 page1 = 0
                 random_pages = random.randint(*self.random_wait_pages)
+
+                weibos = []
                 for page in tqdm(range(1, page_num + 1), desc='Progress'):
                     page_parser = PageParser(
                         self.cookie,
                         self.user_config, page, self.filter, self.search_querys)
 
-                    weibos, self.weibo_id_list = page_parser.get_one_page(
-                        self.weibo_id_list)  # 获取第page页的全部微博
+                    try:
+                        weibos, self.weibo_id_list = page_parser.get_one_page(self.weibo_id_list)  # 获取第page页的全部微博
+                        # weibo_id_list = []
+                        search_weibos, self.weibo_id_list = page_parser.get_all_search_page(
+                            self.weibo_id_list)  # 获取第page页的全部话题搜索微博
 
-                    search_weibos, self.weibo_id_list = page_parser.get_all_search_page(
-                        self.weibo_id_list)  # 获取第page页的全部话题搜索微博
-
-                    # 合并爬取的微博结果
-                    weibos = weibos + search_weibos
+                        # 合并爬取的微博结果
+                        weibos = weibos + search_weibos
+                    except Exception as e:
+                        logger.exception(e)
 
                     logger.info(
                         u'%s已获取%s(%s)的第%d页微博%s',
