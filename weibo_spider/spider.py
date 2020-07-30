@@ -52,7 +52,7 @@ class Spider:
             max(random_wait_seconds)
         ]
         self.write_mode = config[
-            'write_mode']  # 结果信息保存类型，为list形式，可包含txt、csv、json、mongo和mysql五种类型
+            'write_mode']  # 结果信息保存类型，为list形式，可包含txt、csv、json、mongo、es和mysql六种类型
         self.pic_download = config[
             'pic_download']  # 取值范围为0、1,程序默认值为0,代表不下载微博原始图片,1代表下载
         self.video_download = config[
@@ -204,6 +204,11 @@ class Spider:
             from .writer import MongoWriter
 
             self.writers.append(MongoWriter())
+
+        if 'es' in self.write_mode:
+            from .writer import EsWriter
+
+            self.writers.append(EsWriter())
 
         self.downloaders = []
         if self.pic_download == 1:

@@ -68,7 +68,7 @@ def validate_config(config):
         sys.exit()
 
     # 验证write_mode
-    write_mode = ['txt', 'csv', 'json', 'mongo', 'mysql']
+    write_mode = ['txt', 'csv', 'json', 'mongo', 'mysql','es']
     if not isinstance(config['write_mode'], list):
         logger.warning(u'write_mode值应为list类型')
         sys.exit()
