@@ -97,10 +97,11 @@ class Spider:
 
     def write_weibo(self, weibos):
         """将爬取到的信息写入文件或数据库"""
-        for writer in self.writers:
-            writer.write_weibo(weibos)
         for downloader in self.downloaders:
             downloader.download_files(weibos)
+        for writer in self.writers:
+            writer.write_weibo(weibos)
+
 
     def write_user(self, user):
         """将用户信息写入数据库"""
