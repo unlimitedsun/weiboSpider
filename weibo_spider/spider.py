@@ -94,6 +94,7 @@ class Spider:
         self.user = User()  # 存储爬取到的用户信息
         self.got_num = 0  # 存储爬取到的微博数
         self.weibo_id_list = []  # 存储爬取到的所有微博id
+        self.search_querys = config['search_querys']  # 搜索词
 
     def write_weibo(self, weibos):
         """将爬取到的信息写入文件或数据库"""
@@ -125,11 +126,24 @@ class Spider:
                     self.user_config['user_uri']).get_page_num()  # 获取微博总页数
                 page1 = 0
                 random_pages = random.randint(*self.random_wait_pages)
+
+                weibos = []
                 for page in tqdm(range(1, page_num + 1), desc='Progress'):
-                    weibos, self.weibo_id_list = PageParser(
+                    page_parser = PageParser(
                         self.cookie,
-                        self.user_config, page, self.filter).get_one_page(
-                            self.weibo_id_list)  # 获取第page页的全部微博
+                        self.user_config, page, self.filter, self.search_querys)
+
+                    try:
+                        weibos, self.weibo_id_list = page_parser.get_one_page(self.weibo_id_list)  # 获取第page页的全部微博
+                        # weibo_id_list = []
+                        search_weibos, self.weibo_id_list = page_parser.get_all_search_page(
+                            self.weibo_id_list)  # 获取第page页的全部话题搜索微博
+
+                        # 合并爬取的微博结果
+                        weibos = weibos + search_weibos
+                    except Exception as e:
+                        logger.exception(e)
+
                     logger.info(
                         u'%s已获取%s(%s)的第%d页微博%s',
                         '-' * 30,

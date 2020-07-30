@@ -16,7 +16,7 @@ logger = logging.getLogger('spider.page_parser')
 
 
 class PageParser(Parser):
-    def __init__(self, cookie, user_config, page, filter):
+    def __init__(self, cookie, user_config, page, filter, search_querys):
         self.cookie = cookie
         self.user_uri = user_config['user_uri']
         self.since_date = user_config['since_date']
@@ -36,6 +36,9 @@ class PageParser(Parser):
                 self.user_uri, starttime, endtime, page)
         self.selector = handle_html(self.cookie, self.url)
         self.filter = filter
+
+        # 搜索词配置
+        self.search_querys = search_querys
 
     def get_one_page(self, weibo_id_list):
         """获取第page页的全部微博"""
@@ -371,6 +374,106 @@ class PageParser(Parser):
         try:
             weibo_id = info.xpath('@id')[0][2:]
 
+            weibo_comments = CommentParser(self.cookie, weibo_id).get_comments(is_original)
+            return weibo_comments
+        except Exception as e:
+            logger.exception(e)
+
+    @staticmethod
+    def get_search_url(query, pn):
+        return 'https://weibo.cn/search/mblog?keyword=%23' + query + '&page=' + str(pn)
+
+    def get_all_search_page(self, weibo_id_list):
+        try:
+            search_weibo_id_list = weibo_id_list
+            search_weibos = []
+
+            for query in self.search_querys:
+                for i in range(1, 10):
+                    search_selector = handle_html(self.cookie, self.get_search_url(query, i))
+                    weibos, search_weibo_id_list = self.get_one_search_page(search_weibo_id_list,
+                                                                            search_selector)
+                    search_weibos = search_weibos + weibos
+                    weibo_id_list = weibo_id_list + search_weibo_id_list
+
+            return search_weibos, weibo_id_list
+        except Exception as e:
+            logger.exception(e)
+
+    def get_one_search_page(self, weibo_id_list, selector):
+        """获取第page页的全部搜索微博"""
+        try:
+            info = selector.xpath("//div[@class='c']")
+            weibos = []
+            since_date = datetime_util.str_to_time(self.since_date)
+            for i in range(0, len(info) - 2):
+                is_exist = info[i].xpath(".//div")
+                if is_exist:
+                    weibo = self.get_one_search_weibo(info[i])
+                    if weibo:
+                        if weibo.id in weibo_id_list:
+                            continue
+                        publish_time = datetime_util.str_to_time(
+                            weibo.publish_time)
+
+                        if publish_time < since_date:
+                            if self.is_pinned_weibo(info[i]):
+                                continue
+                            else:
+                                return weibos, weibo_id_list
+                        logger.info(weibo)
+                        logger.info('-' * 100)
+                        weibos.append(weibo)
+                        weibo_id_list.append(weibo.id)
+            return weibos, weibo_id_list
+        except Exception as e:
+            logger.exception(e)
+
+    def get_one_search_weibo(self, info):
+        """获取一条搜索微博的全部信息"""
+        try:
+            weibo = Weibo()
+            is_original = self.is_original(info)
+            if (not self.filter) or is_original:
+
+                weibo_id_element = info.xpath('@id')
+                if len(weibo_id_element):
+                    weibo.id = weibo_id_element[0][2:]
+                else:
+                    return
+
+                weibo.content = self.get_weibo_content(info,
+                                                       is_original)  # 微博内容
+                weibo.article_url = self.get_article_url(info)  # 头条文章url
+                picture_urls = self.get_picture_urls(info, is_original)
+                weibo.original_pictures = picture_urls[
+                    'original_pictures']  # 原创图片url
+                weibo.uploaded_pictures = []  # 已上传CDN的微博图片url
+                if not self.filter:
+                    weibo.retweet_pictures = picture_urls[
+                        'retweet_pictures']  # 转发图片url
+                    weibo.original = is_original  # 是否原创微博
+                weibo.video_url = self.get_video_url(info,
+                                                     is_original)  # 微博视频url
+                weibo.uploaded_video_url = ''  # 已上传CDN的微博视频url
+                weibo.publish_place = self.get_publish_place(info)  # 微博发布位置
+                weibo.publish_time = self.get_publish_time(info)  # 微博发布时间
+                weibo.publish_tool = self.get_publish_tool(info)  # 微博发布工具
+                footer = self.get_weibo_footer(info)
+                weibo.up_num = footer['up_num']  # 微博点赞数
+                weibo.retweet_num = footer['retweet_num']  # 转发数
+                weibo.comment_num = footer['comment_num']  # 评论数
+                weibo.comments = self.get_search_weibo_comments(info, is_original, weibo.id)  # 搜索微博的评论
+            else:
+                weibo = None
+                logger.info(u'正在过滤转发微博')
+            return weibo
+        except Exception as e:
+            logger.exception(e)
+
+    def get_search_weibo_comments(self, info, is_original, weibo_id):
+        """获取搜索微博的评论"""
+        try:
             weibo_comments = CommentParser(self.cookie, weibo_id).get_comments(is_original)
             return weibo_comments
         except Exception as e:
