@@ -16,7 +16,7 @@ logger = logging.getLogger('spider.page_parser')
 
 
 class PageParser(Parser):
-    def __init__(self, cookie, user_config, page, filter):
+    def __init__(self, cookie, user_config, page, filter, search_querys):
         self.cookie = cookie
         self.user_uri = user_config['user_uri']
         self.since_date = user_config['since_date']
@@ -36,6 +36,10 @@ class PageParser(Parser):
                 self.user_uri, starttime, endtime, page)
         self.selector = handle_html(self.cookie, self.url)
         self.filter = filter
+
+        # 搜索词配置
+        self.search_querys = search_querys
+        self.search_selector = object
 
     def get_one_page(self, weibo_id_list):
         """获取第page页的全部微博"""
@@ -373,5 +377,55 @@ class PageParser(Parser):
 
             weibo_comments = CommentParser(self.cookie, weibo_id).get_comments(is_original)
             return weibo_comments
+        except Exception as e:
+            logger.exception(e)
+
+    @staticmethod
+    def get_search_url(query, pn):
+        return 'https://weibo.cn/search/mblog?keyword=%23' + query + '&page=' + str(pn)
+
+    def get_all_search_page(self, weibo_id_list):
+        try:
+            search_weibo_id_list = weibo_id_list
+            search_weibos = []
+
+            for query in self.search_querys:
+                for i in range(1, 10):
+                    search_selector = handle_html(self.cookie, self.get_search_url(query, i))
+                    weibos, search_weibo_id_list = self.get_one_search_page(search_weibo_id_list,
+                                                                            search_selector)
+                    search_weibos = search_weibos + weibos
+                    weibo_id_list = weibo_id_list + search_weibo_id_list
+
+            return search_weibos, weibo_id_list
+        except Exception as e:
+            logger.exception(e)
+
+    def get_one_search_page(self, weibo_id_list, selector):
+        """获取第page页的全部搜索微博"""
+        try:
+            info = selector.xpath("//div[@class='c']")
+            is_exist = info[0].xpath("div/span[@class='ctt']")
+            weibos = []
+            if is_exist:
+                since_date = datetime_util.str_to_time(self.since_date)
+                for i in range(0, len(info) - 2):
+                    weibo = self.get_one_weibo(info[i])
+                    if weibo:
+                        if weibo.id in weibo_id_list:
+                            continue
+                        publish_time = datetime_util.str_to_time(
+                            weibo.publish_time)
+
+                        if publish_time < since_date:
+                            if self.is_pinned_weibo(info[i]):
+                                continue
+                            else:
+                                return weibos, weibo_id_list
+                        logger.info(weibo)
+                        logger.info('-' * 100)
+                        weibos.append(weibo)
+                        weibo_id_list.append(weibo.id)
+            return weibos, weibo_id_list
         except Exception as e:
             logger.exception(e)
