@@ -55,19 +55,24 @@ class CommentParser(Parser):
                         c_a = c.xpath(".//a")[0]
 
                         # 评论内容（可能是回复别人的评论）
-                        c_span = c.xpath(".//span[@class='ctt']")[0]
+                        c_span_list = c.xpath(".//span[@class='ctt']")
                         c_span_text = c.xpath(".//span[@class='ctt']/text()")
+
+                        # 评论的赞
+                        c_cc_list = c.xpath(".//span[@class='cc']")
+                        c_cc_text = c_cc_list[0].xpath(".//a")[0].text if len(c_cc_list) else ""
 
                         if len(c_span_text) == 2 and c_span_text[0] == '回复':
                             # 回复别人的评论
+                            if len(c_span_list):
+                                c_span_a = c_span_list[0].xpath(".//a")[0]
 
-                            c_span_a = c_span.xpath(".//a")[0]
                             comment = '[用户] ' + c_a.text + ' [' + c_span_text[0] + '了用户] ' + c_span_a.text[
                                                                                              1:-1] + ', 回复内容为: ' + \
-                                      c_span_text[1]
+                                      c_span_text[1] + ' ' + c_cc_text
                         elif len(c_span_text) == 1:
                             # 直接评论
-                            comment = '[用户] ' + c_a.text + ' 评论到： ' + c_span_text[0]
+                            comment = '[用户] ' + c_a.text + ' 评论到： ' + c_span_text[0] + ' ' + c_cc_text
 
                         comments.append(comment)
             return comments
