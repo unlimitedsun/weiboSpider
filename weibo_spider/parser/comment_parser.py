@@ -1,3 +1,4 @@
+import json
 import logging
 import random
 from time import sleep
@@ -13,6 +14,7 @@ class CommentParser(Parser):
         self.cookie = cookie
         self.url = 'https://weibo.cn/comment/' + weibo_id
         self.selector = handle_html(self.cookie, self.url)
+        self.weibo_id = weibo_id
 
     def get_long_weibo(self):
         """获取长原创微博"""
@@ -42,13 +44,41 @@ class CommentParser(Parser):
             logger.exception(e)
 
     def get_comments(self, is_original):
-        """获取某个微博的评论"""
+        """获取某个微博的所有评论页的评论"""
+        all_comments = []
+        try:
+            # 评论第1页
+            self.selector = handle_html(self.cookie, self.url)
+            comments = self.get_page_comments(is_original, self.selector)
+            all_comments = all_comments + comments
+
+            # 获取此微博的评论总页数
+            page_count = 1
+            div_pa = self.selector.xpath("//div[@class='pa']")
+            if div_pa:
+                input_mp_input = div_pa[0].xpath(".//form/div/input")[0]
+                input_mp_json = input_mp_input.attrib
+                page_count = int(input_mp_json['value'])
+
+            # 评论第2到最后一页
+            if page_count > 1:
+                for pn in range(2, page_count + 1):
+                    selector = handle_html(self.cookie, self.get_comment_page_url(self.weibo_id, pn))
+                    comments = self.get_page_comments(is_original, selector)
+                    all_comments = all_comments + comments
+
+            return all_comments
+
+        except Exception as e:
+            logger.exception(e)
+
+    def get_page_comments(self, is_original, comment_page_selector):
+        """获取某个微博的第pn个评论页的评论"""
         comments = []
         try:
-            self.selector = handle_html(self.cookie, self.url)
-            if self.selector is not None:
+            if comment_page_selector is not None:
                 if is_original:
-                    for c in self.selector.xpath("//div[@class='c']")[3:-2]:
+                    for c in comment_page_selector.xpath("//div[@class='c']")[3:-2]:
                         comment = ''
 
                         # 发评论的用户
@@ -79,3 +109,7 @@ class CommentParser(Parser):
 
         except Exception as e:
             logger.exception(e)
+
+    @staticmethod
+    def get_comment_page_url(weibo_id, pn):
+        return 'https://weibo.cn/comment/' + weibo_id + '?page=' + str(pn)
