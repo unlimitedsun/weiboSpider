@@ -383,20 +383,19 @@ class PageParser(Parser):
     def get_search_url(query, pn):
         return 'https://weibo.cn/search/mblog?keyword=%23' + query + '&page=' + str(pn)
 
-    def get_all_search_page(self, weibo_id_list):
+    def get_all_search_page(self, search_weibo_id_list, pn):
+        """获取全部搜索词的第pn页的所有微博"""
         try:
-            search_weibo_id_list = weibo_id_list
-            search_weibos = []
+            search_weibos_result = []
 
             for query in self.search_querys:
-                for i in range(1, 10):
-                    search_selector = handle_html(self.cookie, self.get_search_url(query, i))
-                    weibos, search_weibo_id_list = self.get_one_search_page(search_weibo_id_list,
-                                                                            search_selector)
-                    search_weibos = search_weibos + weibos
-                    weibo_id_list = weibo_id_list + search_weibo_id_list
+                search_selector = handle_html(self.cookie, self.get_search_url(query, pn))
+                search_weibos, search_weibo_id_list = self.get_one_search_page(search_weibo_id_list,
+                                                                               search_selector)
 
-            return search_weibos, weibo_id_list
+                search_weibos_result = search_weibos_result + search_weibos
+
+            return search_weibos_result, search_weibo_id_list
         except Exception as e:
             logger.exception(e)
 

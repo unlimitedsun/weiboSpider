@@ -94,7 +94,9 @@ class Spider:
         self.user = User()  # 存储爬取到的用户信息
         self.got_num = 0  # 存储爬取到的微博数
         self.weibo_id_list = []  # 存储爬取到的所有微博id
+        self.search_weibo_id_list = []  # 存储爬取到的所有搜索微博id
         self.search_querys = config['search_querys']  # 搜索词
+        self.search_pages = config['search_pages']  # 爬取搜索词的总页数
 
     def write_weibo(self, weibos):
         """将爬取到的信息写入文件或数据库"""
@@ -102,7 +104,6 @@ class Spider:
             downloader.download_files(weibos)
         for writer in self.writers:
             writer.write_weibo(weibos)
-
 
     def write_user(self, user):
         """将用户信息写入数据库"""
@@ -135,12 +136,6 @@ class Spider:
 
                     try:
                         weibos, self.weibo_id_list = page_parser.get_one_page(self.weibo_id_list)  # 获取第page页的全部微博
-                        # weibo_id_list = []
-                        search_weibos, self.weibo_id_list = page_parser.get_all_search_page(
-                            self.weibo_id_list)  # 获取第page页的全部话题搜索微博
-
-                        # 合并爬取的微博结果
-                        weibos = weibos + search_weibos
                     except Exception as e:
                         logger.exception(e)
 
@@ -161,6 +156,55 @@ class Spider:
                     # 制会自动解除)，加入随机等待模拟人的操作，可降低被系统限制的风险。默
                     # 认是每爬取1到5页随机等待6到10秒，如果仍然被限，可适当增加sleep时间
                     if (page - page1) % random_pages == 0 and page < page_num:
+                        sleep(random.randint(*self.random_wait_seconds))
+                        page1 = page
+                        random_pages = random.randint(*self.random_wait_pages)
+        except Exception as e:
+            logger.exception(e)
+
+    def get_search_weibo_info(self):
+        """获取搜索微博信息"""
+        try:
+            since_date = datetime_util.str_to_time(
+                self.user_config['since_date'])
+            now = datetime.now().strftime('%Y-%m-%d %H:%M')
+            now = datetime.strptime(now, '%Y-%m-%d %H:%M')
+            if since_date <= now:
+                page1 = 0
+                random_pages = random.randint(*self.random_wait_pages)
+
+                search_weibos = []
+                self.search_weibo_id_list = self.weibo_id_list
+
+                for page in tqdm(range(1, self.search_pages + 1), desc='Progress'):
+                    page_parser = PageParser(
+                        self.cookie,
+                        self.user_config, page, self.filter, self.search_querys)
+
+                    try:
+                        search_weibos, self.search_weibo_id_list = page_parser.get_all_search_page(
+                            self.search_weibo_id_list, page)  # 获取第page页的全部搜索微博
+
+                    except Exception as e:
+                        logger.exception(e)
+
+                    logger.info(
+                        u'%s已获取%s(%s)的第%d页搜索微博%s',
+                        '-' * 30,
+                        self.user.nickname,
+                        self.user.id,
+                        page,
+                        '-' * 30,
+                    )
+                    if search_weibos:
+                        yield search_weibos
+                    else:
+                        return search_weibos
+
+                    # 通过加入随机等待避免被限制。爬虫速度过快容易被系统限制(一段时间后限
+                    # 制会自动解除)，加入随机等待模拟人的操作，可降低被系统限制的风险。默
+                    # 认是每爬取1到5页随机等待6到10秒，如果仍然被限，可适当增加sleep时间
+                    if (page - page1) % random_pages == 0 and page < self.search_pages:
                         sleep(random.randint(*self.random_wait_seconds))
                         page1 = page
                         random_pages = random.randint(*self.random_wait_pages)
@@ -259,6 +303,7 @@ class Spider:
                 self.write_user(self.user)
                 logger.info('*' * 100)
 
+                # 用户微博爬取
                 for weibos in self.get_weibo_info():
                     self.write_weibo(weibos)
                     self.got_num += len(weibos)
@@ -266,7 +311,18 @@ class Spider:
                     logger.info(u'共爬取' + str(self.got_num) + u'条微博')
                 else:
                     logger.info(u'共爬取' + str(self.got_num) + u'条原创微博')
-                logger.info(u'信息抓取完毕')
+                logger.info(u'用户微博信息抓取完毕')
+
+                # 搜索微博爬取
+                for weibos in self.get_search_weibo_info():
+                    self.write_weibo(weibos)
+                    self.got_num += len(weibos)
+                if not self.filter:
+                    logger.info(u'共爬取' + str(self.got_num) + u'条搜索微博')
+                else:
+                    logger.info(u'共爬取' + str(self.got_num) + u'条搜索原创微博')
+                logger.info(u'搜索信息抓取完毕')
+
                 logger.info('*' * 100)
 
                 if self.user_config_file_path or FLAGS.u:
