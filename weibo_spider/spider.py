@@ -97,6 +97,8 @@ class Spider:
         self.search_weibo_id_list = []  # 存储爬取到的所有搜索微博id
         self.search_querys = config['search_querys']  # 搜索词
         self.search_pages = config['search_pages']  # 爬取搜索词的总页数
+        self.common_switch = config['common_switch']  # 按照用户微博去爬取的开关
+        self.search_switch = config['search_switch']  # 按照搜索微博去爬取的开关
 
     def write_weibo(self, weibos):
         """将爬取到的信息写入文件或数据库"""
@@ -304,24 +306,30 @@ class Spider:
                 logger.info('*' * 100)
 
                 # 用户微博爬取
-                for weibos in self.get_weibo_info():
-                    self.write_weibo(weibos)
-                    self.got_num += len(weibos)
-                if not self.filter:
-                    logger.info(u'共爬取' + str(self.got_num) + u'条微博')
+                if self.common_switch:
+                    for weibos in self.get_weibo_info():
+                        self.write_weibo(weibos)
+                        self.got_num += len(weibos)
+                    if not self.filter:
+                        logger.info(u'共爬取' + str(self.got_num) + u'条微博')
+                    else:
+                        logger.info(u'共爬取' + str(self.got_num) + u'条原创微博')
+                    logger.info(u'用户微博信息抓取完毕')
                 else:
-                    logger.info(u'共爬取' + str(self.got_num) + u'条原创微博')
-                logger.info(u'用户微博信息抓取完毕')
+                    logger.info(u'用户微博信息抓取略过')
 
                 # 搜索微博爬取
-                for weibos in self.get_search_weibo_info():
-                    self.write_weibo(weibos)
-                    self.got_num += len(weibos)
-                if not self.filter:
-                    logger.info(u'共爬取' + str(self.got_num) + u'条搜索微博')
+                if self.search_switch:
+                    for weibos in self.get_search_weibo_info():
+                        self.write_weibo(weibos)
+                        self.got_num += len(weibos)
+                    if not self.filter:
+                        logger.info(u'共爬取' + str(self.got_num) + u'条搜索微博')
+                    else:
+                        logger.info(u'共爬取' + str(self.got_num) + u'条搜索原创微博')
+                    logger.info(u'搜索信息抓取完毕')
                 else:
-                    logger.info(u'共爬取' + str(self.got_num) + u'条搜索原创微博')
-                logger.info(u'搜索信息抓取完毕')
+                    logger.info(u'搜索微博信息抓取略过')
 
                 logger.info('*' * 100)
 
